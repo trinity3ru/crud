@@ -1,6 +1,7 @@
 import sqlite3
 
 from models.user import User 
+from models.bot import Bot
 
 
 class DBManager:
@@ -28,16 +29,27 @@ class DBManager:
         try:
             sql.execute(
                 """
-                INSERT OR IGNORE INTO users (username, password, email) VALUES (?, ?, ?)
-                """, (user.username, user.password, user.email)
+                INSERT OR IGNORE INTO users (username, login, password, email) VALUES (?, ?, ?, ?)
+                """, (user.username, user.login, user.password, user.email)
             )
         except sqlite3.InternalError as e:
             print(f"Error: {e}")
             conn.close()
             return None  
         conn.commit()
-        conn.close()  
-        return sql.fetchone()
+        user_id = sql.lastrowid
+        print(f"User added {user_id}") 
+        
+        conn.close()
+        return user_id 
+
+    def get_all_users(self):
+        conn = sqlite3.connect(self.db_host)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users")
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
     
     def add_bot(self, bot:Bot)->None:
         conn = sqlite3.connect(self.db_host)
@@ -45,16 +57,20 @@ class DBManager:
         try:
             sql.execute(
                 """
-                INSERT INTO bots (token, git, userid) VALUES (?, ?, ?)
-                """, (bot.get_token(), bot.get_git(), bot.get_ownerID() )
+                INSERT INTO bots (token, git, user_id) VALUES (?, ?, ?)
+                """, (bot.get_token(), bot.get_git(), bot.get_user_id())
             )
         except sqlite3.InternalError as e:
             print(f"Error: {e}")
             conn.close()
             return None  
         conn.commit()
-        conn.close()  
-        return sql.fetchone()
+        bot_id = sql.lastrowid
+        print(f"Bot added {bot_id}") 
+        conn.close()
+        return bot_id
+          
+        
 
 
  
