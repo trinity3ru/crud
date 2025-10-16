@@ -2,6 +2,9 @@ import sqlite3
 
 from models.user import User 
 
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 class DBManager:
     def __init__(self):
@@ -32,12 +35,15 @@ class DBManager:
                 """, (user.username, user.password, user.email)
             )
         except sqlite3.InternalError as e:
-            print(f"Error: {e}")
+            # print(f"Error: {e}")
+            logging.error(f"User insert failed: {e}")
             conn.close()
             return None  
         conn.commit()
+        user_id = sql.lastrowid
+        logging.info(f"Added user with id={user_id}, login= {user.login}")
         conn.close()  
-        return sql.fetchone()
+        return user_id
     
     def add_bot(self, bot:Bot)->None:
         conn = sqlite3.connect(self.db_host)
@@ -45,16 +51,18 @@ class DBManager:
         try:
             sql.execute(
                 """
-                INSERT INTO bots (token, git, userid) VALUES (?, ?, ?)
-                """, (bot.get_token(), bot.get_git(), bot.get_ownerID() )
+                INSERT INTO bots (token, git, user_id) VALUES (?, ?, ?)
+                """, (bot.get_token(), bot.get_git(), bot.get_user_id() )
             )
         except sqlite3.InternalError as e:
             print(f"Error: {e}")
             conn.close()
             return None  
         conn.commit()
+        bot_id = sql.lastrowid
+        logging.info(f"Bot added {bot_id} for user {bot.get_user_id()}")
         conn.close()  
-        return sql.fetchone()
+        return bot_id
 
 
  
